@@ -2,7 +2,7 @@
 
 ## 執行方法
 
-在https://github.com/fyne-io/fyne/tree/master/cmd/fyne下有個工具
+在[這](https://github.com/fyne-io/fyne/tree/master/cmd/fyne)下有個工具
 go build之後，有個執行檔
 可以參考官方的[範例](https://github.com/fyne-io/examples/tree/develop/img/icon)
 
