@@ -18,7 +18,7 @@ func makeMainPageTab() fyne.Widget {
 		fyne.LogError("Could not parse URL", err)
 	}
 
-	name := widget.NewLabelWithStyle("Powered by Alfred Wu.", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	name := widget.NewLabelWithStyle("Author: Alfred Wu", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
 	return widget.NewVBox(
 		layout.NewSpacer(),
