@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	fyne.io/fyne v1.2.0
+	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/go-gl/glfw v0.0.0-20191125211704-12ad95a8df72 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/sirupsen/logrus v1.4.2

@@ -4,8 +4,10 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/widget"
+	"github.com/Knetic/govaluate"
 	"github.com/alfred/alfredtoolkit/features"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 )
 
 /*
@@ -20,6 +22,7 @@ const (
 	inType = iota
 	hasOperator
 	inFormula
+	inCalcResult
 )
 
 type calc struct {
@@ -63,6 +66,13 @@ func (c *calc) operatorBtnFunc(text string) {
 
 //  數字專用
 func (c *calc) numBtnFunc(text string) {
+	if c.typeStatus == inCalcResult {
+		c.output.SetText("")
+		c.typeStatus = inType
+		c.output.SetText(c.output.Text + text)
+		c.formulaOutput.SetText("")
+		return
+	}
 	if c.formulaOutput.Text != "" {
 		c.typeStatus = inFormula
 	}
@@ -80,6 +90,27 @@ func (c *calc) addRadio(named string, text []string, isHorizontal bool) *widget.
 	return radio
 }
 
+func (c *calc) evaluate() {
+	formula := c.formulaOutput.Text + c.output.Text
+	if formula == "" {
+		return
+	}
+	expression, err := govaluate.NewEvaluableExpression(formula)
+	if err != nil {
+		log.Println("Error:", err)
+		c.errOutput.SetText("expression error.")
+	} else {
+		c.formulaOutput.SetText(formula + "=")
+		result, err := expression.Evaluate(nil)
+		if err != nil {
+			c.errOutput.SetText("calculate error")
+		} else {
+			c.output.SetText(strconv.FormatFloat(result.(float64), 'f', -1, 64))
+		}
+	}
+	c.typeStatus = inCalcResult
+}
+
 func newCalc() *calc {
 	c := &calc{}
 	c.typeStatus = inType
@@ -95,6 +126,8 @@ func newCalc() *calc {
 	c.bitOutput = widget.NewLabel("0000 0000")
 	c.bitOutput.TextStyle.Monospace = true
 	c.bitOutput.Alignment = fyne.TextAlignTrailing
+
+	c.errOutput = widget.NewLabel("")
 
 	c.stringSrcIutput = widget.NewEntry()
 	c.stringSrcIutput.SetPlaceHolder("AABBCCDD(HEX)")
@@ -118,9 +151,7 @@ func makeCalcPageTab(win fyne.Window) fyne.CanvasObject {
 		if ev.Name == fyne.KeyReturn || ev.Name == fyne.KeyEnter {
 			// TODO:
 			// 	計算結果
-			c.formulaOutput.SetText("")
-			c.output.SetText("")
-			c.typeStatus = inType
+			c.evaluate()
 		}
 		if ev.Name == fyne.KeyDelete || ev.Name == fyne.KeyBackspace {
 			if c.output.Text != "" {
@@ -150,7 +181,7 @@ func makeCalcPageTab(win fyne.Window) fyne.CanvasObject {
 			c.stringSrcIutput,
 			c.addButton("2's complement(1 byte)", func() {
 				if len(c.stringSrcIutput.Text)%2 != 0 || len(c.stringSrcIutput.Text) == 0 {
-					c.stringResultOutput.SetText("Wrong bytes.")
+					c.errOutput.SetText("Wrong bytes.")
 					return
 				}
 				calcByte := []byte(c.stringSrcIutput.Text)
@@ -158,7 +189,7 @@ func makeCalcPageTab(win fyne.Window) fyne.CanvasObject {
 			}),
 			c.addButton("2's complement(2 byte)", func() {
 				if len(c.stringSrcIutput.Text)%2 != 0 || len(c.stringSrcIutput.Text) == 0 {
-					c.stringResultOutput.SetText("Wrong bytes.")
+					c.errOutput.SetText("Wrong bytes.")
 					return
 				}
 				calcByte := []byte(c.stringSrcIutput.Text)
@@ -232,6 +263,7 @@ func makeCalcPageTab(win fyne.Window) fyne.CanvasObject {
 
 	regionWidget3 := widget.NewHBox(
 		functionGroup,
+		layout.NewSpacer(),
 		calcGroup,
 	)
 
@@ -240,5 +272,7 @@ func makeCalcPageTab(win fyne.Window) fyne.CanvasObject {
 		regionWidget2,
 		widget.NewHBox(),
 		regionWidget3,
+		c.errOutput,
+		layout.NewSpacer(),
 	)
 }
