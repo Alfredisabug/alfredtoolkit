@@ -36,6 +36,7 @@ type calc struct {
 	radios             map[string]*widget.Radio
 	functions          map[string]func()
 	typeStatus         int
+	outputType         string
 }
 
 func (c *calc) addButton(text string, action func()) *widget.Button {
@@ -79,19 +80,29 @@ func (c *calc) numBtnFunc(text string) {
 	c.output.SetText(c.output.Text + text)
 }
 
-func (c *calc) addRadio(named string, text []string, isHorizontal bool) *widget.Radio {
+func (c *calc) addRadio(named string, text []string, isHorizontal bool, selected string, action func(string)) *widget.Radio {
 	radio := widget.NewRadio(
 		text,
 		func(s string) {
-			log.Printf(s)
+			action(s)
 		})
 	radio.Horizontal = isHorizontal
+	radio.SetSelected(selected)
 	c.radios[named] = radio
 	return radio
 }
 
 func (c *calc) evaluate() {
-	formula := c.formulaOutput.Text + c.output.Text
+	//TODO:
+	// 最後為符號的時候處理
+	var formula string
+	switch c.outputType {
+	case "DEC":
+		formula = c.formulaOutput.Text + c.output.Text
+	default:
+		c.errOutput.SetText("Not yet support to calc")
+	}
+
 	if formula == "" {
 		return
 	}
@@ -136,6 +147,8 @@ func newCalc() *calc {
 	c.buttons = make(map[string]*widget.Button)
 	c.radios = make(map[string]*widget.Radio)
 	c.functions = make(map[string]func())
+
+	c.outputType = "DEC"
 	return c
 }
 
@@ -161,7 +174,13 @@ func makeCalcPageTab(win fyne.Window) fyne.CanvasObject {
 	})
 
 	regionWidget1 := widget.NewHBox(
-		c.addRadio("digitShow", []string{"BIN", "DEC", "HEX"}, false),
+		c.addRadio("digitShow", []string{"BIN", "DEC", "HEX"}, false, "DEC", func(s string) {
+			if s == "" {
+				c.radios["digitShow"].SetSelected(c.outputType)
+				return
+			}
+			c.outputType = s
+		}),
 		layout.NewSpacer(),
 		widget.NewVBox(
 			c.formulaOutput,
@@ -172,7 +191,9 @@ func makeCalcPageTab(win fyne.Window) fyne.CanvasObject {
 
 	regionWidget2 := widget.NewVBox(
 		c.bitOutput,
-		c.addRadio("bitsShow", []string{"Byte", "short", "Int32", "Int 64"}, true),
+		c.addRadio("bitsShow", []string{"Byte", "short", "Int32", "Int 64"}, true, "Int32", func(s string) {
+			log.Println(s)
+		}),
 	)
 
 	functionGroup := widget.NewGroup("PEC Function",
